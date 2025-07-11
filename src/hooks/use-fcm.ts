@@ -46,7 +46,7 @@ export function useFcm({ onMessage: handleNewNotification }: UseFcmProps) {
     try {
       const messaging = getMessaging(app);
       if ('serviceWorker' in navigator) {
-        const serviceWorkerRegistration = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
+        const serviceWorkerRegistration = await navigator.serviceWorker.ready;
         
         const token = await getToken(messaging, {
           vapidKey: process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY,
@@ -72,9 +72,22 @@ export function useFcm({ onMessage: handleNewNotification }: UseFcmProps) {
 
   useEffect(() => {
     let unsubscribe: (() => void) | undefined;
-    if (permission === 'granted') {
-      setupFcm();
-    }
+    
+    const registerServiceWorker = async () => {
+      if ('serviceWorker' in navigator) {
+        try {
+          await navigator.serviceWorker.register('/firebase-messaging-sw.js', { scope: '/' });
+          console.log('Service Worker registered successfully');
+          if (permission === 'granted') {
+            await setupFcm();
+          }
+        } catch (error) {
+          console.error('Service Worker registration failed:', error);
+        }
+      }
+    };
+    
+    registerServiceWorker();
     
     if (typeof window !== 'undefined' && app && permission === 'granted') {
       const messaging = getMessaging(app);
