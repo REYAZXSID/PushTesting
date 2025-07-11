@@ -4,8 +4,8 @@ export function GET() {
   // This route serves the Firebase messaging service worker.
   // It's created as a dynamic route to securely inject environment variables.
   const swScript = `
-    importScripts('https://www.gstatic.com/firebasejs/9.15.0/firebase-app-compat.js');
-    importScripts('https://www.gstatic.com/firebasejs/9.15.0/firebase-messaging-compat.js');
+    importScripts('https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js');
+    importScripts('https://www.gstatic.com/firebasejs/10.12.2/firebase-messaging-compat.js');
 
     const firebaseConfig = {
         apiKey: "${process.env.NEXT_PUBLIC_FIREBASE_API_KEY}",
@@ -44,6 +44,7 @@ export function GET() {
     status: 200,
     headers: {
       'Content-Type': 'application/javascript',
+      'Service-Worker-Allowed': '/',
     },
   });
 }

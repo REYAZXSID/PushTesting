@@ -45,18 +45,20 @@ export function useFcm({ onMessage: handleNewNotification }: UseFcmProps) {
     
     try {
       const messaging = getMessaging(app);
-      const serviceWorkerRegistration = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
-      
-      const token = await getToken(messaging, {
-        vapidKey: process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY,
-        serviceWorkerRegistration
-      });
-
-      if (token) {
-        setFcmToken(token);
-        console.log('FCM Token:', token);
-      } else {
-        console.log('No registration token available. Request permission to generate one.');
+      if ('serviceWorker' in navigator) {
+        const serviceWorkerRegistration = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
+        
+        const token = await getToken(messaging, {
+          vapidKey: process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY,
+          serviceWorkerRegistration
+        });
+  
+        if (token) {
+          setFcmToken(token);
+          console.log('FCM Token:', token);
+        } else {
+          console.log('No registration token available. Request permission to generate one.');
+        }
       }
     } catch (error) {
       console.error('An error occurred while retrieving token. ', error);
@@ -70,7 +72,11 @@ export function useFcm({ onMessage: handleNewNotification }: UseFcmProps) {
 
   useEffect(() => {
     let unsubscribe: (() => void) | undefined;
-    if (permission === 'granted' && typeof window !== 'undefined' && app) {
+    if (permission === 'granted') {
+      setupFcm();
+    }
+    
+    if (typeof window !== 'undefined' && app && permission === 'granted') {
       const messaging = getMessaging(app);
       
       // Handle foreground messages
@@ -88,15 +94,13 @@ export function useFcm({ onMessage: handleNewNotification }: UseFcmProps) {
           description: notificationData.body,
         });
       });
-      
-      // Initial setup if permission is already granted
-      setupFcm();
     }
 
     return () => {
       unsubscribe?.();
     };
-  }, [permission, handleNewNotification, toast]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [permission]);
 
   return { permission, requestPermission, fcmToken };
 }
