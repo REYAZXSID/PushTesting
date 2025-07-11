@@ -13,6 +13,7 @@ interface UseFcmProps {
 export function useFcm({ onMessage: handleNewNotification }: UseFcmProps) {
   const { toast } = useToast();
   const [permission, setPermission] = useState<NotificationPermission | 'loading'>('loading');
+  const [fcmToken, setFcmToken] = useState<string | null>(null);
 
   useEffect(() => {
     if (typeof window !== 'undefined' && 'Notification' in window) {
@@ -46,13 +47,14 @@ export function useFcm({ onMessage: handleNewNotification }: UseFcmProps) {
       const messaging = getMessaging(app);
       const serviceWorkerRegistration = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
       
-      const fcmToken = await getToken(messaging, {
+      const token = await getToken(messaging, {
         vapidKey: process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY,
         serviceWorkerRegistration
       });
 
-      if (fcmToken) {
-        console.log('FCM Token:', fcmToken);
+      if (token) {
+        setFcmToken(token);
+        console.log('FCM Token:', token);
       } else {
         console.log('No registration token available. Request permission to generate one.');
       }
@@ -96,5 +98,5 @@ export function useFcm({ onMessage: handleNewNotification }: UseFcmProps) {
     };
   }, [permission, handleNewNotification, toast]);
 
-  return { permission, requestPermission };
+  return { permission, requestPermission, fcmToken };
 }

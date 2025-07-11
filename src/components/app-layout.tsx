@@ -1,14 +1,58 @@
 'use client';
 
-import { Bell, TestTubeDiagonal } from 'lucide-react';
-import { useState } from 'react';
+import { Bell, TestTubeDiagonal, Copy, ClipboardCheck, KeyRound } from 'lucide-react';
+import { useState, useEffect } from 'react';
 import type { NotificationData } from '@/lib/types';
 import { useFcm } from '@/hooks/use-fcm';
 import { Button } from '@/components/ui/button';
 import { NotificationForm } from '@/components/notification-form';
 import { NotificationPreview } from '@/components/notification-preview';
 import { NotificationLog } from '@/components/notification-log';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { useToast } from '@/hooks/use-toast';
+
+function FcmTokenDisplay({ token }: { token: string | null }) {
+  const [isCopied, setIsCopied] = useState(false);
+  const { toast } = useToast();
+
+  const handleCopy = () => {
+    if (token) {
+      navigator.clipboard.writeText(token);
+      setIsCopied(true);
+      toast({
+        title: 'Copied to Clipboard!',
+        description: 'The FCM token has been copied.',
+      });
+      setTimeout(() => setIsCopied(false), 2000);
+    }
+  };
+  
+  if (!token) return null;
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2 text-lg">
+            <KeyRound className="h-5 w-5" /> FCM Token
+        </CardTitle>
+        <CardDescription>
+            Use this token to send push notifications directly to this device.
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <div className="flex flex-col gap-4">
+          <p className="break-words rounded-md border bg-muted p-2 text-xs font-mono">
+            {token}
+          </p>
+          <Button onClick={handleCopy} variant="outline" disabled={isCopied}>
+            {isCopied ? <ClipboardCheck /> : <Copy />}
+            {isCopied ? 'Copied!' : 'Copy Token'}
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
 
 export default function AppLayout() {
   const [notifications, setNotifications] = useState<NotificationData[]>([]);
@@ -27,7 +71,7 @@ export default function AppLayout() {
     setNotifications((prev) => [newNotification, ...prev].slice(0, 100)); // Keep max 100 logs
   };
   
-  const { permission, requestPermission } = useFcm({ onMessage: handleNewNotification });
+  const { permission, requestPermission, fcmToken } = useFcm({ onMessage: handleNewNotification });
 
   const handleSendLocalNotification = (data: NotificationData) => {
     if (typeof window !== 'undefined' && 'Notification' in window) {
@@ -75,6 +119,7 @@ export default function AppLayout() {
           />
         </div>
         <div className="flex flex-col gap-8 lg:col-span-3">
+          <FcmTokenDisplay token={fcmToken} />
           <div>
             <h2 className="mb-4 flex items-center gap-2 text-lg font-semibold">
               <TestTubeDiagonal className="h-5 w-5" />
